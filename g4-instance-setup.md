@@ -1,6 +1,6 @@
 # AWS EC2 g4dn.xlarge — Instance Setup Guide
 
-Full steps to launch and configure a GPU instance on AWS for running this project. For local deployment or project overview, see [README.md](./README.md).
+Steps to launch and configure a GPU instance on AWS. Once the instance is ready, return to [README.md](./README.md) to clone and deploy.
 
 ---
 
@@ -42,7 +42,9 @@ Once the instance is running, copy the **Public IPv4 address** from the instance
 
 ---
 
-## Step 2 — SSH into the Instance
+## Step 2 — Verify GPU Driver
+
+SSH into the instance and confirm the GPU is visible:
 
 ```bash
 ssh -i your-key.pem ubuntu@<ec2-public-ip>
@@ -54,9 +56,7 @@ If you get a permissions error on the key file:
 chmod 400 your-key.pem
 ```
 
----
-
-## Step 3 — Verify GPU Driver
+Then run:
 
 ```bash
 nvidia-smi
@@ -73,7 +73,7 @@ After reboot, SSH back in and run `nvidia-smi` again to confirm.
 
 ---
 
-## Step 4 — Install Docker
+## Step 3 — Install Docker
 
 ```bash
 sudo dpkg --configure -a
@@ -100,7 +100,7 @@ sudo systemctl status docker
 
 ---
 
-## Step 5 — Install NVIDIA Container Toolkit
+## Step 4 — Install NVIDIA Container Toolkit
 
 Allows Docker containers to access the GPU.
 
@@ -124,88 +124,7 @@ Test GPU access from inside Docker:
 docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu22.04 nvidia-smi
 ```
 
-The T4 should appear in the container output.
-
----
-
-## Step 6 — Clone the Repo
-
-```bash
-git clone https://github.com/vishakhasadhwani/llm-deployment-demo.git
-cd llm-deployment-demo
-```
-
----
-
-## Step 7 — Create .dockerignore
-
-```bash
-cat > .dockerignore << 'EOF'
-__pycache__
-*.pyc
-vllm-env
-.cache
-EOF
-```
-
----
-
-## Step 8 — Build the Docker Image
-
-```bash
-docker build -t vllm-nexus .
-```
-
-> First build takes 10–20 minutes (downloads PyTorch ~800 MB + vLLM ~200 MB). Subsequent builds use the layer cache.
-
----
-
-## Step 9 — Run the Container
-
-```bash
-docker run --gpus all \
-    -p 80:80 \
-    -p 8000:8000 \
-    -e MODEL_ID=Qwen/Qwen2-1.5B-Instruct \
-    -v ~/.cache/huggingface:/root/.cache/huggingface \
-    vllm-nexus
-```
-
-**Run in background (detached):**
-
-```bash
-docker run -d --gpus all \
-    -p 80:80 \
-    -p 8000:8000 \
-    -e MODEL_ID=Qwen/Qwen2-1.5B-Instruct \
-    -v ~/.cache/huggingface:/root/.cache/huggingface \
-    --name vllm-nexus \
-    vllm-nexus
-```
-
-Check logs:
-
-```bash
-docker logs -f vllm-nexus
-```
-
-Stop and remove:
-
-```bash
-docker stop vllm-nexus && docker rm vllm-nexus
-```
-
----
-
-## Step 10 — Access the UI
-
-Open your browser and go to:
-
-```
-http://<your-ec2-public-ip>
-```
-
-The UI shows **SERVER OFFLINE** for the first 1–3 minutes while the model loads. Click **REFRESH** in the sidebar once ready.
+The T4 should appear in the container output. Your instance is ready — continue from **Step 2** in [README.md](./README.md).
 
 ---
 
@@ -215,7 +134,6 @@ The UI shows **SERVER OFFLINE** for the first 1–3 minutes while the model load
 df -h                                    # check disk usage
 du -sh ~/.cache/huggingface/hub/*        # check model cache size
 docker system prune -af                  # remove unused images and containers
-pip cache purge                          # clear pip cache
 ```
 
 ---
