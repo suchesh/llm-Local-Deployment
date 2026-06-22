@@ -31,51 +31,27 @@ Both services run inside a **single Docker container**. The entrypoint script st
 
 ## Key Component Workflow
 
-### 1. Model Download from HuggingFace
+```mermaid
+flowchart TD
+    HF[("HuggingFace Hub\nModel Weights")]
+    TOKEN["HF Access Token\n(gated models only)"]
+    CUDA["NVIDIA CUDA Base Image\ncuda:12.2.0-runtime-ubuntu22.04"]
+    DEPS["Dependencies\nPyTorch · vLLM · Streamlit"]
+    DOCKER["Docker Image\nvllm-nexus"]
+    ENTRY["Entrypoint Script\nstarts vLLM → waits for /health → starts Streamlit"]
+    VLLM["vLLM Inference Server\nOpenAI-compatible API · Port 8000"]
+    UI["Streamlit Chat UI\nPort 80"]
+    USER["Browser / User"]
 
-vLLM pulls the model weights directly from [HuggingFace Hub](https://huggingface.co) at container startup using the `MODEL_ID` environment variable. Models are cached at `~/.cache/huggingface` and mounted into the container so they are not re-downloaded on restart.
-
-```bash
--e MODEL_ID=Qwen/Qwen2-1.5B-Instruct \
--v ~/.cache/huggingface:/root/.cache/huggingface \
+    TOKEN -->|"HUGGING_FACE_HUB_TOKEN"| HF
+    HF -->|"pulls weights at startup\ncached to ~/.cache/huggingface"| VLLM
+    CUDA --> DEPS --> DOCKER
+    DOCKER --> ENTRY
+    ENTRY --> VLLM
+    ENTRY --> UI
+    VLLM -->|"/v1/chat/completions\nstreaming tokens"| UI
+    UI --> USER
 ```
-
-### 2. HuggingFace Token (for gated models)
-
-Public models like Qwen2 and TinyLlama do not require a token. For gated models (e.g., Llama 3, Gemma), set your HF token:
-
-```bash
--e HUGGING_FACE_HUB_TOKEN=hf_your_token_here
-```
-
-Generate a token at **huggingface.co → Settings → Access Tokens** (read permission is sufficient).
-
-### 3. Dockerfile — Build & Deployment
-
-The Dockerfile starts from the official NVIDIA CUDA runtime image, installs PyTorch (CUDA 12.1 build), then vLLM, Streamlit, and the remaining dependencies.
-
-```dockerfile
-FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
-# installs PyTorch (cu121) + vLLM + Streamlit
-EXPOSE 8000 80
-ENTRYPOINT ["./entrypoint.sh"]
-```
-
-Build the image:
-
-```bash
-docker build -t vllm-nexus .
-```
-
-> First build takes 10–20 minutes (PyTorch ~800 MB + vLLM ~200 MB). Subsequent builds use the layer cache.
-
-### 4. Inference with Streamlit
-
-`app.py` connects to vLLM's OpenAI-compatible REST API at `http://localhost:8000`. It:
-- Polls `/health` to show server status in the sidebar
-- Lists available models from `/v1/models`
-- Streams responses from `/v1/chat/completions` token by token
-- Tracks request count, total tokens, and latency per request
 
 ---
 
