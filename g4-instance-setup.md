@@ -1,6 +1,6 @@
 # AWS EC2 g4dn.xlarge — Instance Setup Guide
 
-Steps to launch and configure a GPU instance on AWS. Once the instance is ready, return to [README.md](./README.md) to clone and deploy.
+Guide to launch and configure a GPU instance on AWS. Once the instance is ready, return to [README.md](./README.md) to clone and deploy.
 
 ---
 

@@ -21,7 +21,7 @@ python3 -m vllm.entrypoints.openai.api_server \
 echo "==> Waiting for vLLM to be ready..."
 until curl -sf http://localhost:8000/health > /dev/null 2>&1; do
     echo "    waiting..."
-    sleep 5
+    sleep 6
 done
 
 echo "==> vLLM ready! Starting Streamlit..."

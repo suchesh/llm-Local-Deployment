@@ -1,3 +1,5 @@
+# UI and interaction logic for the vLLM Nexus demo app
+
 import streamlit as st
 import requests
 import json

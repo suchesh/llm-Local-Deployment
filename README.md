@@ -1,7 +1,6 @@
 # Local Qwen Deployment on vLLM
 
 Run a private, self-hosted LLM chat interface on your own GPU — no API keys, no per-token costs, no data leaving your machine. This project deploys **Qwen2-1.5B-Instruct** (or any compatible HuggingFace model) using **vLLM** as the inference engine and **Streamlit** as the chat frontend, packaged in a single Docker container.
-
 ---
 
 ## Self-Hosted Model vs API-Deployed Model
